@@ -1,176 +1,185 @@
 import numpy as np
 import copy
 
-def is_legal(x,y):
 
-	return (x>=1)&(x<=30)&(y>=1)&(y<=30)
+def is_legal(x, y):
+
+    return (x >= 1) & (x <= 30) & (y >= 1) & (y <= 30)
+
 
 class Surviving(object):
-	def __init__(self, n_agent):
-		super(Surviving, self).__init__()
-		self.n_agent = n_agent
-		self.n_action = 5
-		self.max_food = 10
-		self.capability = 2*self.n_agent
+    def __init__(self, n_agent):
+        super(Surviving, self).__init__()
+        self.n_agent = n_agent
+        self.n_action = 5
+        self.max_food = 10
+        self.capability = 2 * self.n_agent
 
-		self.maze = self.build_env()
-		self.ants = []
-		for i in range(self.n_agent):
-			self.ants.append([np.random.randint(0,30)+1,np.random.randint(0,30)+1])
+        self.maze = self.build_env()
+        self.ants = []
+        for i in range(self.n_agent):
+            self.ants.append(
+                [np.random.randint(0, 30) + 1, np.random.randint(0, 30) + 1]
+            )
 
-		self.foods = []
-		for i in range(self.n_agent):
-			self.foods.append(self.max_food)
+        self.foods = []
+        for i in range(self.n_agent):
+            self.foods.append(self.max_food)
 
-		self.n_resource = 8
-		self.resource = []
-		self.resource_pos = []
-		for i in range(self.n_resource):
-			self.resource_pos.append([np.random.randint(0,30)+1,np.random.randint(0,30)+1])
-			self.resource.append(np.random.randint(100,120))
-		
-		self.steps = 0
-		self.len_obs = 29
+        self.n_resource = 8
+        self.resource = []
+        self.resource_pos = []
+        for i in range(self.n_resource):
+            self.resource_pos.append(
+                [np.random.randint(0, 30) + 1, np.random.randint(0, 30) + 1]
+            )
+            self.resource.append(np.random.randint(100, 120))
 
-	def reset(self):
+        self.steps = 0
+        self.len_obs = 29
 
-		self.maze = self.build_env()
+    def reset(self):
 
-		self.ants = []
-		for i in range(self.n_agent):
-			self.ants.append([np.random.randint(0,30)+1,np.random.randint(0,30)+1])
+        self.maze = self.build_env()
 
-		self.foods = []
-		for i in range(self.n_agent):
-			self.foods.append(self.max_food)
+        self.ants = []
+        for i in range(self.n_agent):
+            self.ants.append(
+                [np.random.randint(0, 30) + 1, np.random.randint(0, 30) + 1]
+            )
 
-		self.resource = []
-		self.resource_pos = []
-		for i in range(self.n_resource):
-			self.resource_pos.append([np.random.randint(0,30)+1,np.random.randint(0,30)+1])
-			self.resource.append(np.random.randint(100,120))
+        self.foods = []
+        for i in range(self.n_agent):
+            self.foods.append(self.max_food)
 
-		return self.get_obs(), self.get_adj()
+        self.resource = []
+        self.resource_pos = []
+        for i in range(self.n_resource):
+            self.resource_pos.append(
+                [np.random.randint(0, 30) + 1, np.random.randint(0, 30) + 1]
+            )
+            self.resource.append(np.random.randint(100, 120))
 
-	def build_env(self):
+        return self.get_obs(), self.get_adj()
 
-		maze = np.zeros((32,32))
-		for i in range(32):
-			maze[0][i] = -1
-			maze[i][0] = -1
-			maze[31][i] = -1
-			maze[i][31] = -1
+    def build_env(self):
 
-		return maze
+        maze = np.zeros((32, 32))
+        for i in range(32):
+            maze[0][i] = -1
+            maze[i][0] = -1
+            maze[31][i] = -1
+            maze[i][31] = -1
 
-	def get_obs(self):
+        return maze
 
-		obs = []
+    def get_obs(self):
 
-		maze_ant = np.zeros((32,32))
-		for index in range(self.n_agent):
-			x = self.ants[index][0]
-			y = self.ants[index][1]
-			maze_ant[x][y] = 1
+        obs = []
 
-		for index in range(self.n_agent):
-			h = []
-			x = self.ants[index][0]
-			y = self.ants[index][1]
-			for i in range(5):
-				h.append(np.mod(x,2))
-				x = int(x/2)
-			for i in range(5):
-				h.append(np.mod(y,2))
-				y = int(y/2)
-			x_t = self.ants[index][0]
-			y_t = self.ants[index][1]
-			for i in range(-1,2):
-				for j in range(-1,2):
-					h.append(self.maze[x_t+i][y_t+j])
+        maze_ant = np.zeros((32, 32))
+        for index in range(self.n_agent):
+            x = self.ants[index][0]
+            y = self.ants[index][1]
+            maze_ant[x][y] = 1
 
-			for i in range(-1,2):
-				for j in range(-1,2):
-					h.append(maze_ant[x_t+i][y_t+j])
+        for index in range(self.n_agent):
+            h = []
+            x = self.ants[index][0]
+            y = self.ants[index][1]
+            for i in range(5):
+                h.append(np.mod(x, 2))
+                x = int(x / 2)
+            for i in range(5):
+                h.append(np.mod(y, 2))
+                y = int(y / 2)
+            x_t = self.ants[index][0]
+            y_t = self.ants[index][1]
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    h.append(self.maze[x_t + i][y_t + j])
 
-			h.append(self.foods[index])
-			obs.append(h)
+            for i in range(-1, 2):
+                for j in range(-1, 2):
+                    h.append(maze_ant[x_t + i][y_t + j])
 
-		return obs
+            h.append(self.foods[index])
+            obs.append(h)
 
-	def get_adj(self):
+        return obs
 
-		adj = np.zeros((1,self.n_agent,self.n_agent))
+    def get_adj(self):
 
-		maze_ant = np.ones((32,32), dtype = np.int)*-1
-		for index in range(self.n_agent):
-			x = self.ants[index][0]
-			y = self.ants[index][1]
-			maze_ant[x][y] = index
+        adj = np.zeros((1, self.n_agent, self.n_agent))
 
-		for index in range(self.n_agent):
-			x = self.ants[index][0]
-			y = self.ants[index][1]
+        maze_ant = np.ones((32, 32), dtype=int) * -1
+        for index in range(self.n_agent):
+            x = self.ants[index][0]
+            y = self.ants[index][1]
+            maze_ant[x][y] = index
 
-			for i in range(-3,4):
-				for j in range(-3,4):
-					if is_legal(x+i,y+j):
-						if (maze_ant[x+i][y+j] != -1):
-							adj[0][index][maze_ant[x+i][y+j]] = 1
+        for index in range(self.n_agent):
+            x = self.ants[index][0]
+            y = self.ants[index][1]
 
-		return adj
+            for i in range(-3, 4):
+                for j in range(-3, 4):
+                    if is_legal(x + i, y + j):
+                        if maze_ant[x + i][y + j] != -1:
+                            adj[0][index][maze_ant[x + i][y + j]] = 1
 
+        return adj
 
-	def step(self,actions):
+    def step(self, actions):
 
-		for i in range(self.n_agent):
-			x = self.ants[i][0]
-			y = self.ants[i][1]
-			
-			if actions[i] == 0:
-				if self.maze[x-1][y]!= -1:
-					 self.ants[i][0] = x-1
-			if actions[i] == 1:
-				if self.maze[x+1][y]!= -1:
-					 self.ants[i][0] = x+1
-			if actions[i] == 2:
-				if self.maze[x][y-1]!= -1:
-					 self.ants[i][1] = y-1
-			if actions[i] == 3:
-				if self.maze[x][y+1]!= -1:
-					 self.ants[i][1] = y+1
-			if actions[i] == 4:
-				self.foods[i] += 2*self.maze[x][y]
-				self.maze[x][y] = 0
+        for i in range(self.n_agent):
+            x = self.ants[i][0]
+            y = self.ants[i][1]
 
-			self.foods[i] = max(0,min(self.foods[i]-1,self.max_food))
+            if actions[i] == 0:
+                if self.maze[x - 1][y] != -1:
+                    self.ants[i][0] = x - 1
+            if actions[i] == 1:
+                if self.maze[x + 1][y] != -1:
+                    self.ants[i][0] = x + 1
+            if actions[i] == 2:
+                if self.maze[x][y - 1] != -1:
+                    self.ants[i][1] = y - 1
+            if actions[i] == 3:
+                if self.maze[x][y + 1] != -1:
+                    self.ants[i][1] = y + 1
+            if actions[i] == 4:
+                self.foods[i] += 2 * self.maze[x][y]
+                self.maze[x][y] = 0
 
-		reward = [0.4]*self.n_agent
-		for i in range(self.n_agent):
-			if self.foods[i] == 0:
-				reward[i] = - 0.2
+            self.foods[i] = max(0, min(self.foods[i] - 1, self.max_food))
 
-		done = False
+        reward = [0.4] * self.n_agent
+        for i in range(self.n_agent):
+            if self.foods[i] == 0:
+                reward[i] = -0.2
 
-		if (self.maze.sum()+120) > self.capability:
+        done = False
 
-			return self.get_obs(), self.get_adj(), reward, done
+        if (self.maze.sum() + 120) > self.capability:
 
-		for i in range(self.n_resource):
+            return self.get_obs(), self.get_adj(), reward, done
 
-			x = self.resource_pos[i][0] + np.random.randint(-3,4)
-			y = self.resource_pos[i][1] + np.random.randint(-3,4)
+        for i in range(self.n_resource):
 
-			if is_legal(x,y):
+            x = self.resource_pos[i][0] + np.random.randint(-3, 4)
+            y = self.resource_pos[i][1] + np.random.randint(-3, 4)
 
-				num = np.random.randint(1,6)
-				self.maze[x][y] += num
-				self.maze[x][y] = min(self.maze[x][y],5)
-				self.resource[i] -= num
+            if is_legal(x, y):
 
-				if self.resource[i] <= 0:
-					self.resource_pos[i][0] = np.random.randint(0,30)+1
-					self.resource_pos[i][1] = np.random.randint(0,30)+1
-					self.resource[i] = np.random.randint(100,120)
+                num = np.random.randint(1, 6)
+                self.maze[x][y] += num
+                self.maze[x][y] = min(self.maze[x][y], 5)
+                self.resource[i] -= num
 
-		return self.get_obs(), self.get_adj(), reward, done
+                if self.resource[i] <= 0:
+                    self.resource_pos[i][0] = np.random.randint(0, 30) + 1
+                    self.resource_pos[i][1] = np.random.randint(0, 30) + 1
+                    self.resource[i] = np.random.randint(100, 120)
+
+        return self.get_obs(), self.get_adj(), reward, done
