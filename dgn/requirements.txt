@@ -1,0 +1,6 @@
+pyglet<2
+six
+numpy<2.0.0
+gym
+tensorboardX
+tensorboard>=2.2.1

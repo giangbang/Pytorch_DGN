@@ -15,6 +15,13 @@ from buffer import ReplayBuffer
 from surviving import Surviving
 from config import *
 
+
+def print_all_shape(kwargs):
+    print("=" * 10)
+    for key, val in kwargs.items():
+        print(f"{key}: {np.array(val).shape}")
+
+
 USE_CUDA = torch.cuda.is_available()
 
 device = "cuda" if USE_CUDA else "cpu"
@@ -61,6 +68,15 @@ while i_episode < n_episode:
             action.append(a)
 
         next_obs, next_adj, reward, terminated = env.step(action)
+
+        print_all_shape(
+            {
+                "obs": next_obs,
+                "adj": next_adj,
+                "rewards": reward,
+                "done": terminated,
+            }
+        )
 
         buff.add(
             np.array(obs), action, reward, np.array(next_obs), adj, next_adj, terminated
