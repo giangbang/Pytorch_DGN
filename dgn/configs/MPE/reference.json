@@ -1,6 +1,6 @@
 {
     "hidden_dim": 128,
-    "max_step": 200,
+    "max_step": 25,
     "GAMMA": 0.99,
     "num_env_steps": 1000000,
     "capacity": 1000000,
@@ -8,6 +8,10 @@
     "n_epoch": 10,
     "epsilon": 0.9,
     "tau": 0.98,
-    "plan": 1,
-    "name": "gridworld"
+    "name": "mpe",
+    "scenario_name": "simple_reference",
+    "episode_length": 25,
+    "num_agents": 2,
+    "num_landmarks": 3,
+    "ratio": 0.9999
 }

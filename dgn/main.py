@@ -64,8 +64,15 @@ def train(args):
     n_ant = env.n_agents
     print("num agent:", n_ant)
     observation_space = env.observation_space[0]
-    n_actions = env.action_space[0].n
+    n_actions = np.array(env.num_actions)
     print("num actions:", n_actions)
+
+    print("observation space", env.observation_space)
+
+    assert (
+        n_actions == n_actions[0]
+    ).all(), "not support different num actions each agents"
+    n_actions = n_actions[0]
 
     buff = ReplayBuffer(args["capacity"], observation_space.shape, n_actions, n_ant)
     model = [
@@ -92,10 +99,11 @@ def train(args):
     f = open(os.path.join(log_path, "r.txt"), "w")
     total_step = 0
     all_scores = []
+    ratio = args.get("ratio", 0.995)
     while total_step < args["num_env_steps"]:
 
         if i_episode > 40:
-            epsilon *= 0.995
+            epsilon *= ratio
             if epsilon < 0.01:
                 epsilon = 0.01
         i_episode += 1
