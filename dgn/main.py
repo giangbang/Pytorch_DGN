@@ -234,6 +234,7 @@ def train(args):
                     for p, p_targ in zip(m.parameters(), tar_m.parameters()):
                         p_targ.data.mul_(tau)
                         p_targ.data.add_((1 - tau) * p.data)
+    f.close()
 
 
 if __name__ == "__main__":
