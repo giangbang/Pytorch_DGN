@@ -1,4 +1,4 @@
-import math, random, copy
+import random
 import numpy as np
 import os
 
@@ -74,7 +74,8 @@ def train(args):
     ).all(), "not support different num actions each agents"
     n_actions = n_actions[0]
 
-    buff = ReplayBuffer(args["capacity"], observation_space.shape, n_actions, n_ant)
+    capacity = min(args["capacity"], args["num_env_steps"])
+    buff = ReplayBuffer(capacity, observation_space.shape, n_actions, n_ant)
     model = [
         DGN(n_ant, observation_space, args["hidden_dim"], n_actions)
         for _ in range(n_ant)
@@ -85,7 +86,7 @@ def train(args):
     ]
     model = [m.to(device) for m in model]
     model_tar = [m.to(device) for m in model_tar]
-    optimizer = [optim.Adam(m.parameters(), lr=0.0001) for m in model]
+    optimizer = [optim.Adam(m.parameters(), lr=args["lr"]) for m in model]
 
     n_episode = (args["num_env_steps"] + args["max_step"] - 1) // args["max_step"]
     GAMMA = args["GAMMA"]
@@ -95,10 +96,13 @@ def train(args):
     tau = args["tau"]
 
     results_path, log_path, writter = init_dir(args["name"], args["seed"])
+    args_text = json.dumps(args, separators=(",", ":\t"), indent=4, sort_keys=True)
+    writter.add_text("config", args_text)
 
     f = open(os.path.join(log_path, "r.txt"), "w")
     total_step = 0
     all_scores = []
+    all_scores_each_agent = []
     ratio = args.get("ratio", 0.995)
     while total_step < args["num_env_steps"]:
 
@@ -109,6 +113,7 @@ def train(args):
         i_episode += 1
         steps = 0
         score = 0
+        score_each_agent = np.zeros(env.n_agents)
 
         obs, adj = env.reset()
 
@@ -130,17 +135,6 @@ def train(args):
 
             next_obs, next_adj, reward, done = env.step(action)
             terminated = done.all()
-            # print_all_shape(
-            #     {
-            #         "obs": next_obs,
-            #         "adj": next_adj,
-            #         "rewards": reward,
-            #         "done": terminated,
-            #     }
-            # )
-
-            # print("reward", reward.shape)
-            # exit()
 
             buff.add(
                 np.array(obs),
@@ -154,11 +148,13 @@ def train(args):
             obs = next_obs
             adj = next_adj
             score += np.mean(reward)
+            score_each_agent += reward.reshape(score_each_agent.shape)
 
             if terminated.all():
                 break
 
         all_scores.append(score)
+        all_scores_each_agent.append(score_each_agent)
 
         total_step += steps
 
@@ -174,10 +170,24 @@ def train(args):
             )
             all_scores = []
 
+            avg_score_each_agent = np.mean(all_scores_each_agent, axis=0)
+            for agent_id, avg_score_each in zip(
+                range(env.n_agents), avg_score_each_agent
+            ):
+                print(
+                    "average episode rewards of agent{} is {}".format(
+                        agent_id, avg_score_each
+                    )
+                )
+                writter.add_scalar(
+                    f"agent{agent_id}/average_episode_rewards",
+                    avg_score_each,
+                    total_step,
+                )
+
         if i_episode < 20:
             continue
 
-        # avg_loss = []
         for e in range(args["n_epoch"]):
 
             O, A, R, Next_O, Matrix, Next_Matrix, D = buff.getBatch(args["batch_size"])
@@ -195,26 +205,6 @@ def train(args):
                     target_q_values = tar_m(Next_O, Next_Matrix)
                     target_q_values = target_q_values.max(dim=2)[0][:, i_agent]
                 target_q_values = target_q_values.cpu().data.numpy()
-                # expected_q = q_values.copy().detach()
-
-                # q_values = m(
-                #     torch.Tensor(O).to(device),
-                #     torch.Tensor(Matrix).to(device),
-                # )[:, i_agent]
-                # target_q_values = tar_m(
-                #     torch.Tensor(Next_O).to(device),
-                #     torch.Tensor(Next_Matrix).to(device),
-                # ).max(dim=2)[0][:, i_agent]
-                # target_q_values = np.array(target_q_values.cpu().data)
-                # expected_q = np.array(q_values.cpu().data)
-
-                # for j in range(args["batch_size"]):
-                #     sample = batch[j]
-                #     # for i in range(n_ant):
-                #     expected_q[j][sample[1][i_agent]] = (
-                #         sample[2][i_agent]
-                #         + (1 - sample[6]) * GAMMA * target_q_values[j]
-                # )
 
                 expected_q = (
                     R[:, i_agent]
@@ -229,36 +219,21 @@ def train(args):
                 #         R[j][i_agent]
                 #         + (1 - D[j].squeeze()) * GAMMA * target_q_values[j]
                 #     )
-                # print("expected_q", expected_q.shape)
-                # print("A", A.shape)
-                # print("target_q_values", target_q_values.shape)
-                # print("R", R.shape)
-                # print("D", D.shape)
-                # exit()
 
                 # print(
                 #     "q_values", q_values.shape, "expected_q", expected_q.shape
                 # )  # batch x (n_ant) x n_action
-                # print("rewards", sample[2][i])
-                # exit()
+
                 assert q_values.shape == expected_q.shape
                 loss = (q_values - torch.Tensor(expected_q).to(device)).pow(2).mean()
                 op.zero_grad()
                 loss.backward()
                 op.step()
 
-                #     avg_loss.append(loss.item())
-                # writter.add_scalar("TD error", np.mean(avg_loss), total_step)
-                # if i_episode % 20 == 0:
-                #     print("TD error", np.mean(avg_loss))
-
                 with torch.no_grad():
                     for p, p_targ in zip(m.parameters(), tar_m.parameters()):
                         p_targ.data.mul_(tau)
                         p_targ.data.add_((1 - tau) * p.data)
-        # if i_episode % 20 == 0:
-        # for m_tar, m in zip(model_tar, model):
-        #     m_tar.load_state_dict(m.state_dict())
 
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
 {
-    "hidden_dim": 128,
+    "hidden_dim": 64,
+    "lr": 3e-4,
     "max_step": 200,
     "GAMMA": 0.99,
-    "num_env_steps": 1000000,
+    "num_env_steps": 500000,
     "capacity": 1000000,
     "batch_size": 128,
     "n_epoch": 10,
