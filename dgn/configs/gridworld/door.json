@@ -10,5 +10,6 @@
     "epsilon": 0.9,
     "tau": 0.98,
     "plan": 1,
+    "learning_start": 40,
     "name": "gridworld"
 }

@@ -9,6 +9,7 @@
     "n_epoch": 5,
     "epsilon": 0.9,
     "tau": 0.98,
+    "learning_start": 100,
     "name": "mpe",
     "scenario_name": "simple_reference",
     "episode_length": 25,

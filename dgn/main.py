@@ -165,8 +165,8 @@ def train(args):
 
             f.write(str(total_step) + ", " + str(avg_score) + "\n")
             print(
-                f"episode: {i_episode}, total steps {total_step}, score:",
-                str(avg_score) + f", epsilon: {epsilon}" + "\n",
+                f"\n episode: {i_episode}, total steps {total_step}, score:",
+                str(avg_score) + f", epsilon: {epsilon}",
             )
             all_scores = []
 
@@ -184,8 +184,9 @@ def train(args):
                     avg_score_each,
                     total_step,
                 )
+            all_scores_each_agent = []
 
-        if i_episode < 20:
+        if i_episode < args["learning_start"]:
             continue
 
         for e in range(args["n_epoch"]):
