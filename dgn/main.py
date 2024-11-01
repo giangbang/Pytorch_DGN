@@ -106,7 +106,7 @@ def train(args):
     ratio = args.get("ratio", 0.995)
     while total_step < args["num_env_steps"]:
 
-        if i_episode > 40:
+        if i_episode > args["learning_start"]:
             epsilon *= ratio
             if epsilon < 0.01:
                 epsilon = 0.01
